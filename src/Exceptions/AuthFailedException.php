@@ -21,7 +21,7 @@ class AuthFailedException extends RuntimeException implements HttpExceptionInter
 
     public function getStatusCode(): int
     {
-        return Response::HTTP_UNPROCESSABLE_ENTITY;
+        return Response::HTTP_UNAUTHORIZED;
     }
 
     public function getHeaders(): array
