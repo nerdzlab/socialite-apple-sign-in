@@ -1,11 +1,11 @@
 {
-  "name": "nerdzlab/laravel-apple-sign-in",
+  "name": "nerdzlab/laravel-socialite-apple-sign-in",
   "description": "Extension of laravel/socialite package. Adds apple provider to sign in.",
   "keywords": [
     "nerdzlab",
-    "laravel-apple-sign-in"
+    "laravel-socialite-apple-sign-in"
   ],
-  "homepage": "https://github.com/nerdzlab/laravel-apple-sign-in",
+  "homepage": "https://github.com/nerdzlab/laravel-socialite-apple-sign-in",
   "license": "MIT",
   "type": "library",
   "authors": [
@@ -27,7 +27,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Nerdzlab\\LaravelAppleSignIn\\": "src"
+      "Nerdzlab\\LaravelSocialiteAppleSignIn\\": "src"
     }
   },
   "config": {
@@ -36,7 +36,7 @@
   "extra": {
     "laravel": {
       "providers": [
-        "Nerdzlab\\LaravelAppleSignIn\\LaravelAppleSignInServiceProvider"
+        "Nerdzlab\\LaravelSocialiteAppleSignIn\\LaravelSocialiteAppleSignInServiceProvider"
       ]
     }
   }

@@ -7,7 +7,12 @@ Good solution for implementation auth with apple for REST API. This package is e
 You can install the package via composer:
 
 ```bash
-composer require nerdzlab/laravel-apple-sign-in
+composer require nerdzlab/laravel-socialite-apple-sign-in
+```
+
+You may publish config if needed:
+```bash
+ php artisan vendor:publish --provider="Nerdzlab\LaravelSocialiteAppleSignIn\LaravelSocialiteAppleSignInServiceProvider" --tag="config"
 ```
 
 ## Usage

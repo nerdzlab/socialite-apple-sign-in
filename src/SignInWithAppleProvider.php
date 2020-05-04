@@ -1,14 +1,16 @@
 <?php
 
-namespace Nerdzlab\LaravelAppleSignIn;
+namespace Nerdzlab\LaravelSocialiteAppleSignIn;
 
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Contracts\Cache\Repository;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Laravel\Socialite\Two\AbstractProvider;
 use Laravel\Socialite\Two\ProviderInterface;
 use Laravel\Socialite\Two\User;
 use Firebase\JWT\JWK;
 use Firebase\JWT\JWT;
-use Nerdzlab\LaravelAppleSignIn\Exceptions\AuthFailedException;
+use Nerdzlab\LaravelSocialiteAppleSignIn\Exceptions\AppleSignInException;
 use Throwable;
 
 class SignInWithAppleProvider extends AbstractProvider implements ProviderInterface
@@ -48,11 +50,11 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
         $tokenData = $this->checkTokenSignature($token);
 
         if ($this->clientId !== $tokenData['aud']) {
-            throw new AuthFailedException('Invalid client_id.');
+            throw AppleSignInException::invalidClientId();
         }
 
         if (self::TOKEN_ISSUER !== $tokenData['iss']) {
-            throw AuthFailedException::invalidToken();
+            throw AppleSignInException::invalidIssuer();
         }
 
         return $tokenData;
@@ -67,11 +69,11 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
         try {
             $payload = JWT::decode(
                 $token,
-                Storage::disk('local')->get($this->keyPath($keyId)),
+                $this->keyStorage()->get($this->keyPath($keyId)),
                 [self::VERIFICATION_ALGORITHM]
             );
         } catch (Throwable $exception) {
-            throw AuthFailedException::invalidToken($exception);
+            throw AppleSignInException::invalidToken($exception);
         }
 
         return (array)$payload;
@@ -81,11 +83,11 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
     {
         $header = json_decode(base64_decode(explode('.', $token)[0]), true);
 
-        if (!isset($header['kid']) || !is_string($header['kid'])) {
-            throw AuthFailedException::invalidToken();
+        if (!$kid = (string)Arr::get($header, 'kid')) {
+            throw AppleSignInException::invalidPublicKeyId();
         }
 
-        return $header['kid'];
+        return $kid;
     }
 
     private function getAuthKeys(): array
@@ -97,12 +99,12 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
 
     private function prepareKey(string $keyId): void
     {
-        if (!Storage::disk('local')->exists($this->keyPath($keyId))) {
+        if (!$this->keyStorage()->get($this->keyPath($keyId))) {
             $this->updatePublicKeys();
         }
 
-        if (!Storage::disk('local')->exists($this->keyPath($keyId))) {
-            throw AuthFailedException::invalidToken();
+        if (!$this->keyStorage()->get($this->keyPath($keyId))) {
+            throw AppleSignInException::invalidPublicKeyId();
         }
     }
 
@@ -113,12 +115,17 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
         foreach ($publicKeys as $name => $resource) {
             $keyData = openssl_pkey_get_details($resource);
 
-            Storage::disk('local')->put($this->keyPath($name), $keyData['key']);
+            $this->keyStorage()->add($this->keyPath($name), $keyData['key'], config('socialite-apple.cache.ttl'));
         }
     }
 
     private function keyPath(string $name): string
     {
-        return 'appleKeys/' . $name . '.pub';
+        return config('socialite-apple.cache.prefix') . $name;
+    }
+
+    private function keyStorage(): Repository
+    {
+        return Cache::store(config('socialite-apple.cache.store'));
     }
 }
