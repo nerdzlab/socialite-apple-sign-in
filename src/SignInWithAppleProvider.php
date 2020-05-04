@@ -3,8 +3,8 @@
 namespace Nerdzlab\LaravelSocialiteAppleSignIn;
 
 use Illuminate\Contracts\Cache\Repository;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Laravel\Socialite\Two\AbstractProvider;
 use Laravel\Socialite\Two\ProviderInterface;
 use Laravel\Socialite\Two\User;
@@ -15,8 +15,9 @@ use Throwable;
 
 class SignInWithAppleProvider extends AbstractProvider implements ProviderInterface
 {
-    private const VERIFICATION_ALGORITHM = 'RS256';
+    private const ALGORITHM = 'RS256';
     private const TOKEN_ISSUER = 'https://appleid.apple.com';
+    private const JWK_URL = 'https://appleid.apple.com/auth/keys';
 
     protected function getAuthUrl($state): string
     {
@@ -30,23 +31,7 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
 
     protected function getUserByToken($token): array
     {
-        return $this->validateToken($token);
-    }
-
-    protected function mapUserToObject(array $user): User
-    {
-        return (new User)
-            ->setRaw($user)
-            ->map([
-                'id'    => $user['sub'],
-                'email' => $user['email'] && !array_key_exists('is_private_email', $user) ? $user['email'] : null,
-            ]);
-    }
-
-
-    private function validateToken(string $token): array
-    {
-        $tokenData = $this->checkTokenSignature($token);
+        $tokenData = $this->decode($token);
 
         if ($this->clientId !== $tokenData['aud']) {
             throw AppleSignInException::invalidClientId();
@@ -59,17 +44,23 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
         return $tokenData;
     }
 
-    private function checkTokenSignature(string $token): array
+    protected function mapUserToObject(array $user): User
     {
-        $keyId = $this->extractKeyId($token);
+        return (new User)
+            ->setRaw($user)
+            ->map([
+                'id'    => $user['sub'],
+                'email' => $user['email'] && !array_key_exists('is_private_email', $user) ? $user['email'] : null,
+            ]);
+    }
 
-        $this->prepareKey($keyId);
-
+    private function decode(string $token): array
+    {
         try {
             $payload = JWT::decode(
                 $token,
-                $this->keyStorage()->get($this->keyPath($keyId)),
-                [self::VERIFICATION_ALGORITHM]
+                $this->getPublicKey($this->extractKid($token)),
+                [self::ALGORITHM]
             );
         } catch (Throwable $exception) {
             throw AppleSignInException::invalidToken($exception);
@@ -78,44 +69,39 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
         return (array)$payload;
     }
 
-    private function extractKeyId(string $token): string
+    private function extractKid(string $token): string
     {
-        $header = json_decode(base64_decode(explode('.', $token)[0]), true);
+        $header = JWT::jsonDecode(JWT::urlsafeB64Decode(Str::before($token, '.')));
 
-        if (!$kid = (string)Arr::get($header, 'kid')) {
-            throw AppleSignInException::invalidPublicKeyId();
+        if (!$header || !isset($header->kid) || !$kid = (string)$header->kid) {
+            throw AppleSignInException::invalidKid();
         }
 
         return $kid;
     }
 
-    private function getAuthKeys(): array
+    public function getJWK(string $keyId): string
     {
-        $response = $this->getHttpClient()->get('https://appleid.apple.com/auth/keys');
+        $body = $this->getHttpClient()->get(self::JWK_URL)->getBody();
 
-        return json_decode($response->getBody(), true);
+        $parsed = JWK::parseKeySet(json_decode($body, true));
+
+        if (!$key = data_get($parsed, $keyId)) {
+            throw AppleSignInException::invalidKid();
+        }
+
+        return openssl_pkey_get_details($key)['key'];
     }
 
-    private function prepareKey(string $keyId): void
+    private function getPublicKey(string $keyId): string
     {
-        if (!$this->keyStorage()->get($this->keyPath($keyId))) {
-            $this->updatePublicKeys();
-        }
-
-        if (!$this->keyStorage()->get($this->keyPath($keyId))) {
-            throw AppleSignInException::invalidPublicKeyId();
-        }
-    }
-
-    private function updatePublicKeys(): void
-    {
-        $publicKeys = JWK::parseKeySet($this->getAuthKeys());
-
-        foreach ($publicKeys as $name => $resource) {
-            $keyData = openssl_pkey_get_details($resource);
-
-            $this->keyStorage()->add($this->keyPath($name), $keyData['key'], config('socialite-apple.cache.ttl'));
-        }
+        return $this->keyStorage()->remember(
+            $this->keyPath($keyId),
+            config('socialite-apple.cache.ttl'),
+            function () use ($keyId) {
+                return $this->getJWK($keyId);
+            }
+        );
     }
 
     private function keyPath(string $name): string

@@ -17,7 +17,7 @@ class AppleSignInException extends BadRequestHttpException
         return new self($previous->getMessage(), $previous);
     }
 
-    public static function invalidPublicKeyId(): self
+    public static function invalidKid(): self
     {
         return new self('Invalid public key id.');
     }
