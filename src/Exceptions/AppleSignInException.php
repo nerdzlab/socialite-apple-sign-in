@@ -1,15 +1,15 @@
 <?php
 
-namespace Nerdzlab\LaravelSocialiteAppleSignIn\Exceptions;
+namespace Nerdzlab\SocialiteAppleSignIn\Exceptions;
 
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Exception;
 use Throwable;
 
-class AppleSignInException extends BadRequestHttpException
+class AppleSignInException extends Exception
 {
     public function __construct($message = '', Throwable $previous = null)
     {
-        parent::__construct($message, $previous, 0);
+        parent::__construct($message, 0, $previous);
     }
 
     public static function invalidToken(Throwable $previous): self

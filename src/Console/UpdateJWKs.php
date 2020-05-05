@@ -1,17 +1,17 @@
 <?php
 
-namespace Nerdzlab\LaravelSocialiteAppleSignIn\Console;
+namespace Nerdzlab\SocialiteAppleSignIn\Console;
 
 use Firebase\JWT\JWK;
 use GuzzleHttp\Client;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
-use Nerdzlab\LaravelSocialiteAppleSignIn\SignInWithAppleProvider;
+use Nerdzlab\SocialiteAppleSignIn\SignInWithAppleProvider;
 use Throwable;
 
 class UpdateJWKs extends Command
 {
-    protected $signature = 'apple-sign-in:update-jwks';
+    protected $signature = 'apple-sign-in:update-keys';
 
     protected $description = 'Update jwk and store public keys in cache.';
 
@@ -20,7 +20,7 @@ class UpdateJWKs extends Command
         try {
             $body = $client->get(SignInWithAppleProvider::JWK_URL)->getBody();
 
-            $parsed = collect(JWK::parseKeySet(json_decode($body, true)));
+            $parsed = JWK::parseKeySet(json_decode($body, true));
 
             foreach ($parsed as $kid => $resource) {
                 $this->storeKey($kid, $resource);
@@ -34,10 +34,10 @@ class UpdateJWKs extends Command
 
     private function storeKey(string $kid, $resource): void
     {
-        Cache::store(config('apple-sign-in.cache.store'))->set(
-            config('apple-sign-in.cache.prefix') . $kid,
+        Cache::store(config('apple_sign_in.cache.store'))->set(
+            config('apple_sign_in.cache.prefix') . $kid,
             openssl_pkey_get_details($resource)['key'],
-            config('apple-sign-in.cache.ttl')
+            config('apple_sign_in.cache.ttl')
         );
     }
 }

@@ -1,32 +1,31 @@
 <?php
 
-namespace Nerdzlab\LaravelSocialiteAppleSignIn\Tests;
+namespace Nerdzlab\SocialiteAppleSignIn\Tests;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Socialite\SocialiteServiceProvider;
 use Orchestra\Testbench\TestCase;
-use Nerdzlab\LaravelSocialiteAppleSignIn\LaravelSocialiteAppleSignInServiceProvider;
+use Nerdzlab\SocialiteAppleSignIn\SocialiteAppleSignInServiceProvider;
 
 class CommandTest extends TestCase
 {
     protected function getPackageProviders($app): array
     {
-        return [LaravelSocialiteAppleSignInServiceProvider::class, SocialiteServiceProvider::class];
+        return [SocialiteAppleSignInServiceProvider::class, SocialiteServiceProvider::class];
     }
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        config(['services.apple.client_id' => DataStub::getClientId()]);
+        config(['services.apple.client_id' => DataStub::clientId()]);
 
         $mock = new MockHandler([
-            new Response(200, [], DataStub::getJWKResponseBody())
+            new Response(200, [], DataStub::JWKResponseBody())
         ]);
         $handlerStack = HandlerStack::create($mock);
 
@@ -35,11 +34,7 @@ class CommandTest extends TestCase
 
     public function testExecution(): void
     {
-        $this->assertEmpty(Cache::get(config('apple-sign-in.cache.prefix') . DataStub::getKid()));
-
-        $this->artisan('apple-sign-in:update-jwks')
+        $this->artisan('apple-sign-in:update-keys')
              ->expectsOutput('All keys successfully updated.');
-
-        $this->assertNotEmpty(Cache::get(config('apple-sign-in.cache.prefix') . DataStub::getKid()));
     }
 }

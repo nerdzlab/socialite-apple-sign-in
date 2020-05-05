@@ -1,47 +1,48 @@
 <?php
 
-namespace Nerdzlab\LaravelSocialiteAppleSignIn\Tests;
+namespace Nerdzlab\SocialiteAppleSignIn\Tests;
 
 use Firebase\JWT\JWT;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
+use Illuminate\Contracts\Cache\Repository as CacheInterface;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\SocialiteServiceProvider;
-use Nerdzlab\LaravelSocialiteAppleSignIn\Exceptions\AppleSignInException;
+use Mockery;
+use Nerdzlab\SocialiteAppleSignIn\Exceptions\AppleSignInException;
+use Nerdzlab\SocialiteAppleSignIn\SocialiteAppleSignInServiceProvider;
 use Orchestra\Testbench\TestCase;
-use Nerdzlab\LaravelSocialiteAppleSignIn\LaravelSocialiteAppleSignInServiceProvider;
 
 class AuthTest extends TestCase
 {
     private $token;
 
-    /** @var \Nerdzlab\LaravelSocialiteAppleSignIn\SignInWithAppleProvider $provider */
-    private $provider;
-
     protected function getPackageProviders($app): array
     {
-        return [LaravelSocialiteAppleSignInServiceProvider::class, SocialiteServiceProvider::class];
+        return [
+            SocialiteServiceProvider::class,
+            SocialiteAppleSignInServiceProvider::class,
+        ];
     }
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->token = DataStub::getToken();
+        $this->token = DataStub::token();
 
-        config(['services.apple.client_id' => DataStub::getClientId()]);
+        config(['services.apple.client_id' => DataStub::clientId()]);
 
-        $mock = new MockHandler([
-            new Response(200, [], DataStub::getJWKResponseBody())
-        ]);
-        $handlerStack = HandlerStack::create($mock);
+        $handler = HandlerStack::create(
+            new MockHandler([
+                new Response(200, [], DataStub::JWKResponseBody())
+            ])
+        );
 
-        $this->provider = Socialite::driver('apple');
-        $this->provider->setHttpClient(new Client(['handler' => $handlerStack]));
+        Socialite::driver('apple')->setHttpClient(new Client(['handler' => $handler]));
     }
 
     public function testExpiredToken(): void
@@ -49,7 +50,7 @@ class AuthTest extends TestCase
         $this->expectException(AppleSignInException::class);
         $this->expectExceptionMessage('Expired token');
 
-        $this->provider->userFromToken($this->token);
+        Socialite::driver('apple')->userFromToken($this->token);
     }
 
     public function testInvalidHeader(): void
@@ -57,9 +58,7 @@ class AuthTest extends TestCase
         $this->expectException(AppleSignInException::class);
         $this->expectExceptionMessage('Malformed UTF-8 characters');
 
-        $this->provider->userFromToken(
-            '123.' . Str::after($this->token, '.')
-        );
+        Socialite::driver('apple')->userFromToken(DataStub::tokenWithInvalidHeader());
     }
 
     public function testInvalidKid(): void
@@ -67,9 +66,7 @@ class AuthTest extends TestCase
         $this->expectException(AppleSignInException::class);
         $this->expectExceptionMessage('Invalid public key id.');
 
-        $this->provider->userFromToken(
-            'eyJraWQiOiIxMjM0NSIsImFsZyI6IlJTMjU2In0=.' . Str::after($this->token, '.')
-        );
+        Socialite::driver('apple')->userFromToken(DataStub::tokenWithInvalidKid());
     }
 
     public function testFakeHeader(): void
@@ -77,21 +74,36 @@ class AuthTest extends TestCase
         $this->expectException(AppleSignInException::class);
         $this->expectExceptionMessage('Invalid public key id.');
 
-        $this->provider->userFromToken(
-            'eyJxd2VydHkiOjF9.' . Str::after($this->token, '.')
-        );
+        Socialite::driver('apple')->userFromToken(DataStub::tokenWithFakeHeader());
     }
 
     public function testSuccessful(): void
     {
-        JWT::$timestamp = 1588258184;
+        $this->mockCache();
 
-        $this->assertEmpty(Cache::get(config('apple-sign-in.cache.prefix') . DataStub::getKid()));
+        JWT::$timestamp = DataStub::tokenValidTime();
 
-        $user = $this->provider->userFromToken($this->token);
+        $user = Socialite::driver('apple')->userFromToken($this->token);
 
-        $this->assertSame($user->getId(), DataStub::geUserId());
+        $this->assertSame($user->getId(), DataStub::userId());
+    }
 
-        $this->assertNotEmpty(Cache::get(config('apple-sign-in.cache.prefix') . DataStub::getKid()));
+    /** @noinspection PhpParamsInspection */
+    private function mockCache(): void
+    {
+        $store = Mockery::mock(CacheInterface::class)
+                        ->shouldReceive('remember')
+                        ->once()
+                        ->withArgs(static function ($key, $ttl) {
+                            return $key === config('apple_sign_in.cache.prefix') . DataStub::kid()
+                                && $ttl === config('apple_sign_in.cache.ttl');
+                        })
+                        ->andReturn(DataStub::tokenBody())
+                        ->getMock();
+
+
+        Cache::shouldReceive('store')
+             ->once()
+             ->andReturn($store);
     }
 }

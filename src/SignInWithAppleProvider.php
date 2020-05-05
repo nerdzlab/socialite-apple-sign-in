@@ -1,6 +1,6 @@
 <?php
 
-namespace Nerdzlab\LaravelSocialiteAppleSignIn;
+namespace Nerdzlab\SocialiteAppleSignIn;
 
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Facades\Cache;
@@ -10,7 +10,7 @@ use Laravel\Socialite\Two\ProviderInterface;
 use Laravel\Socialite\Two\User;
 use Firebase\JWT\JWK;
 use Firebase\JWT\JWT;
-use Nerdzlab\LaravelSocialiteAppleSignIn\Exceptions\AppleSignInException;
+use Nerdzlab\SocialiteAppleSignIn\Exceptions\AppleSignInException;
 use Throwable;
 
 class SignInWithAppleProvider extends AbstractProvider implements ProviderInterface
@@ -51,8 +51,9 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
         return (new User)
             ->setRaw($user)
             ->map([
-                'id'    => $user['sub'],
-                'email' => $user['email'],
+                'id'               => $user['sub'],
+                'email'            => $user['email'],
+                'is_private_email' => data_get($user, 'is_private_email', false),
             ]);
     }
 
@@ -103,7 +104,7 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
     {
         return $this->keyStorage()->remember(
             $this->keyPath($keyId),
-            config('apple-sign-in.cache.ttl'),
+            config('apple_sign_in.cache.ttl'),
             function () use ($keyId) {
                 return $this->getJWK($keyId);
             }
@@ -112,11 +113,11 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
 
     private function keyPath(string $name): string
     {
-        return config('apple-sign-in.cache.prefix') . $name;
+        return config('apple_sign_in.cache.prefix') . $name;
     }
 
     private function keyStorage(): Repository
     {
-        return Cache::store(config('apple-sign-in.cache.store'));
+        return Cache::store(config('apple_sign_in.cache.store'));
     }
 }

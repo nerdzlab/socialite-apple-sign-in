@@ -7,12 +7,12 @@ Good solution for implementation auth with apple for REST API. This package is e
 You can install the package via composer:
 
 ```bash
-composer require nerdzlab/laravel-socialite-apple-sign-in
+composer require nerdzlab/socialite-apple-sign-in
 ```
 
 You may publish config if needed:
 ```bash
- php artisan vendor:publish --provider="Nerdzlab\LaravelSocialiteAppleSignIn\LaravelSocialiteAppleSignInServiceProvider" --tag="config"
+ php artisan vendor:publish --provider="Nerdzlab\SocialiteAppleSignIn\SocialiteAppleSignInServiceProvider" --tag="config"
 ```
 
 ## Usage
@@ -37,7 +37,7 @@ Package will cache public keys retrieved from apple during auth flow.
 You may automatically cache public keys by calling command:
 
 ```bash
-php artisan apple-sign-in:update-jwks
+php artisan apple-sign-in:update-keys
 ```
 
 ### Changelog
