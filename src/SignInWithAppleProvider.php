@@ -31,6 +31,11 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
         return '';
     }
 
+    /**
+     * @param string $token
+     * @return array
+     * @throws \Nerdzlab\SocialiteAppleSignIn\Exceptions\AppleSignInException
+     */
     protected function getUserByToken($token): array
     {
         $tokenData = $this->decode($token);
@@ -57,6 +62,11 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
             ]);
     }
 
+    /**
+     * @param string $token
+     * @return array
+     * @throws \Nerdzlab\SocialiteAppleSignIn\Exceptions\AppleSignInException
+     */
     private function decode(string $token): array
     {
         try {
@@ -72,6 +82,11 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
         return (array)$payload;
     }
 
+    /**
+     * @param string $token
+     * @return string
+     * @throws \Nerdzlab\SocialiteAppleSignIn\Exceptions\AppleSignInException
+     */
     private function extractKid(string $token): string
     {
         try {
@@ -87,6 +102,11 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
         return $kid;
     }
 
+    /**
+     * @param string $keyId
+     * @return string
+     * @throws \Nerdzlab\SocialiteAppleSignIn\Exceptions\AppleSignInException
+     */
     public function getJWK(string $keyId): string
     {
         $body = $this->getHttpClient()->get(self::JWK_URL)->getBody();
@@ -100,6 +120,10 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
         return openssl_pkey_get_details($key)['key'];
     }
 
+    /**
+     * @param string $keyId
+     * @return string
+     */
     private function getPublicKey(string $keyId): string
     {
         return $this->keyStorage()->remember(
