@@ -33,6 +33,13 @@ use Laravel\Socialite\Facades\Socialite;
 $user = Socialite::driver('apple')->userFromToken($accessToken);
 ```
 
+Package will cache public keys retrieved from apple during auth flow.
+You may automatically cache public keys by calling command:
+
+```bash
+php artisan apple-sign-in:update-jwks
+```
+
 ### Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information what has changed recently.

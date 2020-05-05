@@ -4,6 +4,7 @@ namespace Nerdzlab\LaravelSocialiteAppleSignIn;
 
 use Illuminate\Support\ServiceProvider;
 use Laravel\Socialite\Contracts\Factory as Socialite;
+use Nerdzlab\LaravelSocialiteAppleSignIn\Console\UpdateJWKs;
 
 class LaravelSocialiteAppleSignInServiceProvider extends ServiceProvider
 {
@@ -24,13 +25,17 @@ class LaravelSocialiteAppleSignInServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__ . '/../config/socialite-apple.php' => config_path('socialite-apple.php'),
+                __DIR__ . '/../config/apple-sign-in.php' => config_path('apple-sign-in.php'),
             ], 'config');
+
+            $this->commands([
+                UpdateJWKs::class
+            ]);
         }
     }
 
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/socialite-apple.php', 'socialite-apple');
+        $this->mergeConfigFrom(__DIR__ . '/../config/apple-sign-in.php', 'apple-sign-in');
     }
 }

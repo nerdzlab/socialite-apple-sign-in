@@ -23,11 +23,17 @@
     "ext-json": "*"
   },
   "require-dev": {
-    "orchestra/testbench": "^4.0"
+    "orchestra/testbench": "^4.0",
+    "phpunit/phpunit": "^9.1"
   },
   "autoload": {
     "psr-4": {
-      "Nerdzlab\\LaravelSocialiteAppleSignIn\\": "src"
+      "Nerdzlab\\LaravelSocialiteAppleSignIn\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Nerdzlab\\LaravelSocialiteAppleSignIn\\Tests\\": "tests/"
     }
   },
   "config": {

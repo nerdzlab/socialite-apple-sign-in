@@ -15,9 +15,11 @@ use Throwable;
 
 class SignInWithAppleProvider extends AbstractProvider implements ProviderInterface
 {
+    protected $stateless = true;
+
     private const ALGORITHM = 'RS256';
     private const TOKEN_ISSUER = 'https://appleid.apple.com';
-    private const JWK_URL = 'https://appleid.apple.com/auth/keys';
+    public const JWK_URL = 'https://appleid.apple.com/auth/keys';
 
     protected function getAuthUrl($state): string
     {
@@ -50,7 +52,7 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
             ->setRaw($user)
             ->map([
                 'id'    => $user['sub'],
-                'email' => $user['email'] && !array_key_exists('is_private_email', $user) ? $user['email'] : null,
+                'email' => $user['email'],
             ]);
     }
 
@@ -71,7 +73,11 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
 
     private function extractKid(string $token): string
     {
-        $header = JWT::jsonDecode(JWT::urlsafeB64Decode(Str::before($token, '.')));
+        try {
+            $header = JWT::jsonDecode(JWT::urlsafeB64Decode(Str::before($token, '.')));
+        } catch (Throwable $exception) {
+            throw AppleSignInException::invalidToken($exception);
+        }
 
         if (!$header || !isset($header->kid) || !$kid = (string)$header->kid) {
             throw AppleSignInException::invalidKid();
@@ -97,7 +103,7 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
     {
         return $this->keyStorage()->remember(
             $this->keyPath($keyId),
-            config('socialite-apple.cache.ttl'),
+            config('apple-sign-in.cache.ttl'),
             function () use ($keyId) {
                 return $this->getJWK($keyId);
             }
@@ -106,11 +112,11 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
 
     private function keyPath(string $name): string
     {
-        return config('socialite-apple.cache.prefix') . $name;
+        return config('apple-sign-in.cache.prefix') . $name;
     }
 
     private function keyStorage(): Repository
     {
-        return Cache::store(config('socialite-apple.cache.store'));
+        return Cache::store(config('apple-sign-in.cache.store'));
     }
 }
