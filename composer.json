@@ -3,7 +3,12 @@
   "description": "Extension of laravel/socialite package. Adds apple provider to sign in.",
   "keywords": [
     "nerdzlab",
-    "socialite-apple-sign-in"
+    "socialite-apple-sign-in",
+    "laravel",
+    "socialite",
+    "sign in with apple",
+    "apple sign in",
+    "apple"
   ],
   "homepage": "https://github.com/nerdzlab/socialite-apple-sign-in",
   "license": "MIT",
