@@ -17,7 +17,7 @@ You may publish config if needed:
 
 ## Usage
 
-To get started you need to add credentials for the apple service in your services config file.
+To get started you need to add credentials for the apple service in your `config/services.php` file.
 
 ``` php
 'apple' => [
