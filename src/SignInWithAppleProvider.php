@@ -56,8 +56,8 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
         return (new User)
             ->setRaw($user)
             ->map([
-                'id'               => $user['sub'],
-                'email'            => $user['email'],
+                'id'               => data_get($user, 'sub'),
+                'email'            => data_get($user, 'email'),
                 'is_private_email' => data_get($user, 'is_private_email', false),
             ]);
     }
