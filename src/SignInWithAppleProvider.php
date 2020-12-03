@@ -13,6 +13,9 @@ use Firebase\JWT\JWT;
 use Nerdzlab\SocialiteAppleSignIn\Exceptions\AppleSignInException;
 use Throwable;
 
+/**
+ * @property array $clientId
+ */
 class SignInWithAppleProvider extends AbstractProvider implements ProviderInterface
 {
     protected $stateless = true;
@@ -40,7 +43,7 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
     {
         $tokenData = $this->decode($token);
 
-        if ($this->clientId !== $tokenData['aud']) {
+        if (!in_array($tokenData['aud'], $this->clientId, true)) {
             throw AppleSignInException::invalidClientId();
         }
 

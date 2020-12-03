@@ -21,7 +21,18 @@ To get started you need to add credentials for the apple service in your `config
 
 ``` php
 'apple' => [
-    'client_id' => 'YOUR_APP_ID'
+    'client_id' => 'YOUR_BUNDLE_ID'
+],
+```
+
+In case you have several apps, you may add several bundle ids as array.
+
+``` php
+'apple' => [
+    'client_id' => [
+        'FIRST_BUNDLE_ID',
+        'SECOND_BUNDLE_ID',
+    ]
 ],
 ```
 

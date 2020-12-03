@@ -2,6 +2,7 @@
 
 namespace Nerdzlab\SocialiteAppleSignIn;
 
+use Illuminate\Support\Arr;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Socialite\Contracts\Factory as Socialite;
 use Nerdzlab\SocialiteAppleSignIn\Console\UpdateJWKs;
@@ -13,12 +14,12 @@ class SocialiteAppleSignInServiceProvider extends ServiceProvider
         $socialite = $this->app->make(Socialite::class);
 
         $socialite->extend('apple', static function ($app) use ($socialite) {
-            $config = $app['config']['services.apple'];
-
             $config = array_merge([
                 'client_secret' => null,
                 'redirect'      => null
-            ], $config);
+            ], $app['config']['services.apple']);
+
+            $config['client_id'] = Arr::wrap($app['config']['services.apple.client_id']);
 
             return $socialite->buildProvider(SignInWithAppleProvider::class, $config);
         });
