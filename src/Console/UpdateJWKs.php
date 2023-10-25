@@ -27,6 +27,7 @@ class UpdateJWKs extends Command
             }
         } catch (Throwable $exception) {
             $this->error($exception->getMessage());
+            $this->error($exception->getTraceAsString());
         }
 
         $this->info('All keys successfully updated.');
@@ -36,7 +37,7 @@ class UpdateJWKs extends Command
     {
         Cache::store(config('apple_sign_in.cache.store'))->set(
             config('apple_sign_in.cache.prefix') . $kid,
-            openssl_pkey_get_details($resource)['key'],
+            openssl_pkey_get_details($resource->getKeyMaterial())['key'],
             config('apple_sign_in.cache.ttl')
         );
     }
