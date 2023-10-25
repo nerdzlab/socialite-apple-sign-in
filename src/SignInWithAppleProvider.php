@@ -120,7 +120,7 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
             throw AppleSignInException::invalidKid();
         }
 
-        return openssl_pkey_get_details($key)['key'];
+        return openssl_pkey_get_details($key->getKeyMaterial())['key'];
     }
 
     /**
