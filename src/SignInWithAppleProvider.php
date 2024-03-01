@@ -10,6 +10,7 @@ use Laravel\Socialite\Two\ProviderInterface;
 use Laravel\Socialite\Two\User;
 use Firebase\JWT\JWK;
 use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use Nerdzlab\SocialiteAppleSignIn\Exceptions\AppleSignInException;
 use Throwable;
 
@@ -75,8 +76,7 @@ class SignInWithAppleProvider extends AbstractProvider implements ProviderInterf
         try {
             $payload = JWT::decode(
                 $token,
-                $this->getPublicKey($this->extractKid($token)),
-                [self::ALGORITHM]
+                new Key($this->getPublicKey($this->extractKid($token)), self::ALGORITHM),
             );
         } catch (Throwable $exception) {
             throw AppleSignInException::invalidToken($exception);
